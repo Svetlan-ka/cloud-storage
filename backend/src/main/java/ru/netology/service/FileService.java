@@ -2,7 +2,6 @@ package ru.netology.service;
 
 import jakarta.transaction.Transactional;
 import lombok.Data;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -22,7 +21,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-@Log4j2
 @Data
 @Service
 public class FileService {
@@ -48,7 +46,6 @@ public class FileService {
         uploadFile.setFileByte(file.getBytes());
 
         fileRepository.saveAndFlush(uploadFile);
-        log.info("File {} was uploaded", fileName);
         return HttpStatus.OK;
     }
 
@@ -62,7 +59,6 @@ public class FileService {
             throw new FileNotFoundException("File not found");
         }
         fileRepository.delete(file);
-        log.info("File {} was deleted", fileName);
         return HttpStatus.OK;
     }
 
@@ -73,7 +69,6 @@ public class FileService {
         File file = findFileByFileNameAndLogin(fileName, login);
         file.setFileName(newFileName);
         fileRepository.saveAndFlush(file);
-        log.info("File {} was renamed to {}", fileName, newFileName);
         return HttpStatus.OK;
     }
 
@@ -85,7 +80,6 @@ public class FileService {
         if (file == null) {
             throw new FileNotFoundException("File not found");
         }
-        log.info("File {} was downloaded", fileName);
         return file.getFileByte();
     }
 
@@ -93,7 +87,8 @@ public class FileService {
     public List<FileDTO> getAllFiles(int limit) {
         String login = getUserLogin();
         return fileRepository.findAllFilesByUserLogin(login)
-                .stream().map(mapperFile::mapFileToFileDto)
+                .stream()
+                .map(mapperFile::mapFileToFileDto)
                 .limit(limit)
                 .collect(Collectors.toList());
     }

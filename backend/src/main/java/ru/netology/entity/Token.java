@@ -8,9 +8,12 @@ import lombok.NoArgsConstructor;
 
 @Data
 @Builder
-@AllArgsConstructor
-@NoArgsConstructor
+
 public class Token {
     @JsonProperty("auth-token")
     private String token;
+
+    public Token(String token) {
+        this.token = token;
+    }
 }

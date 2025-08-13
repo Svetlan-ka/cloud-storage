@@ -1,60 +1,43 @@
 package ru.netology.service;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.hibernate.annotations.Formula;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import ru.netology.DTO.UserDTO;
-import ru.netology.entity.Token;
-import ru.netology.entity.Role;
-import ru.netology.entity.User;
 import ru.netology.exception.BadCredentialsException;
+import ru.netology.exception.UserNotFoundException;
 import ru.netology.repository.UserRepository;
+import ru.netology.entity.Token;
 
 @Service
-@RequiredArgsConstructor
-@Log4j2
 public class AuthenticationService {
     private final UserRepository repository;
-    private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
-
-    public Token register(UserDTO request) {
-        var user = User.builder()
-                .login(request.getLogin())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .role(Role.USER)
-                .build();
-        repository.save(user);
-        var jwtToken = jwtService.generateToken(user);
-        log.info("User {} registered", user.getLogin());
-        return Token.builder()
-                .token(jwtToken)
-                .build();
+    public AuthenticationService(UserRepository repository, JwtService jwtService, AuthenticationManager authenticationManager) {
+        this.repository = repository;
+        this.jwtService = jwtService;
+        this.authenticationManager = authenticationManager;
     }
 
-    public Token authenticate(UserDTO request) {
+
+    public Token authenticate(UserDTO userDTO) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.getLogin(),
-                        request.getPassword()
+                        userDTO.getLogin(),
+                        userDTO.getPassword()
                 )
         );
-        var user = repository.findUserByLogin(request.getLogin());
-        if (user.isEmpty()) {
-            log.error("User not found");
-            throw new BadCredentialsException("User not found");
+        var user = repository.findUserByLogin(userDTO.getLogin());
+        if (user.isPresent()) {
+            var jwtToken = jwtService.generateToken(user.get());
+            return Token.builder()
+                    .token(jwtToken)
+                    .build();
         }
-        var jwtToken = jwtService.generateToken(user.get());
-        log.info("User {} authenticated", user.get().getLogin());
-        return Token.builder()
-                .token(jwtToken)
-                .build();
+        throw new UserNotFoundException("User not found");
     }
 
     @Formula("(select u.id from user u where u.login = login)")
@@ -64,9 +47,21 @@ public class AuthenticationService {
         if (jwtToken.startsWith(BEARER_PREFIX)) {
             final String token = jwtToken.substring(BEARER_PREFIX.length());
             jwtService.addTokenInBlackList(token);
-            log.info("User {} logout", jwtService.extractUserLogin(token));
         }
+        throw new BadCredentialsException("Invalid token");
     }
+
+    /*
+    public Token register(@NonNull UserDTO request) {
+        var user = mapperUser.mapUserDtoToUser(request);
+        repository.save(user);
+        var jwtToken = jwtService.generateToken(user);
+        Token token = Token.builder()
+                .token(jwtToken)
+                .build();
+        return token;
+    }
+     */
 
 }
 

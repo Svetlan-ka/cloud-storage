@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  server:
+    container_name: cloud-storage-backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+       - "9999:9999"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/postgres
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: admin
+    depends_on:
+      - postgresql
+
+  postgresql:
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+
+  client:
+    container_name: cloud-storage-frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8085:8085"
+
+
+
